@@ -5,7 +5,7 @@ pipeline {
         DEPLOY_USER = "backup_gcp"
         DEPLOY_HOST = "10.4.4.70"
         DEPLOY_DIR = "/home/backup_gcp/run"
-        GIT_URL = "https://github.com/<your-username>/<repo>.git"  // replace with your repo
+        GIT_URL = "https://github.com/kruthikav04/Web-app.git"  // replace with your repo
         SSH_CRED = "vm-ssh"
     }
 
