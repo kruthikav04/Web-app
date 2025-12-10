@@ -38,7 +38,7 @@ pipeline {
             steps {
                 sshagent([SSH_CRED]) {
                     sh """
-                        scp -p 5001 image.tar ${DEPLOY_USER}@${DEPLOY_HOST}:/tmp/image.tar
+                        scp -P 5001 image.tar ${DEPLOY_USER}@${DEPLOY_HOST}:/tmp/image.tar
                     """
                 }
             }
@@ -48,16 +48,12 @@ pipeline {
             steps {
                 sshagent([SSH_CRED]) {
                     sh """
-                        ssh ${DEPLOY_USER}@${DEPLOY_HOST} '
-                            docker load -i /tmp/image.tar &&
-                            if [ \$(docker ps -q -f name=${CONTAINER_NAME}) ]; then
-                                docker stop ${CONTAINER_NAME};
-                            fi &&
-                            if [ \$(docker ps -aq -f name=${CONTAINER_NAME}) ]; then
-                                docker rm ${CONTAINER_NAME};
-                            fi &&
-                            docker run -d --name ${CONTAINER_NAME} -p ${PORT}:${PORT} ${IMAGE_NAME}:${BUILD_NUMBER}
-                        '
+                        ssh -p 5001 ${DEPLOY_USER}@${DEPLOY_HOST} "\
+                            docker load -i /tmp/image.tar && \
+                            docker stop ${CONTAINER_NAME} || true && \
+                            docker rm ${CONTAINER_NAME} || true && \
+                            docker run -d --name ${CONTAINER_NAME} -p ${PORT}:${PORT} ${IMAGE_NAME}:${BUILD_NUMBER}\
+                        "
                     """
                 }
             }
@@ -69,6 +65,8 @@ pipeline {
             echo "App deployed on VM 10.4.4.70 successfully!"
             echo "Access it at: http://10.4.4.70:${PORT}"
         }
+        failure {
+            echo "Deployment failed! Check the logs."
+        }
     }
 }
-
