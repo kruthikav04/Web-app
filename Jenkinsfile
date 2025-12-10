@@ -7,7 +7,7 @@ pipeline {
         PORT = "5001"
         DEPLOY_SERVER = "backup_gcp@10.4.4.70"
         DEPLOY_DIR = "/home/backup_gcp/run"
-        GIT_REPO = "https://github.com/<your-username>/<your-repo>.git"
+        GIT_REPO = "https://github.com/kruthikav04/Web-app.git"
     }
 
     stages {
