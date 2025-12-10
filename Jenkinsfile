@@ -2,80 +2,30 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = "python-webapp"
-        CONTAINER_NAME = "pythonweb"
-        PORT = "5001"
-        DEPLOY_SERVER = "backup_gcp@10.4.4.70"
+        DEPLOY_USER = "backup_gcp"
+        DEPLOY_HOST = "10.4.4.70"
         DEPLOY_DIR = "/home/backup_gcp/run"
-        GIT_REPO = "https://github.com/kruthikav04/Web-app.git"
+        GIT_URL = "https://github.com/<your-username>/<repo>.git"  // replace with your repo
+        SSH_CRED = "vm-ssh"
     }
 
     stages {
-
-        stage('Prepare Remote Folder') {
+        stage('Deploy Python App') {
             steps {
-                sh """
-                    ssh ${DEPLOY_SERVER} "mkdir -p ${DEPLOY_DIR}"
-                """
+                sshagent([SSH_CRED]) {
+                    sh """
+                        ssh -o StrictHostKeyChecking=no ${DEPLOY_USER}@${DEPLOY_HOST} '
+                            mkdir -p ${DEPLOY_DIR} &&
+                            cd ${DEPLOY_DIR} &&
+                            rm -rf * &&
+                            git clone ${GIT_URL} app &&
+                            cd app &&
+                            pip3 install -r requirements.txt &&
+                            nohup python3 app.py > output.log 2>&1 &
+                        '
+                    """
+                }
             }
-        }
-
-        stage('Clone Repo on VM 70') {
-            steps {
-                sh """
-                    ssh ${DEPLOY_SERVER} "
-                        cd ${DEPLOY_DIR} &&
-                        rm -rf * &&
-                        git clone ${GIT_REPO} .
-                    "
-                """
-            }
-        }
-
-        stage('Build Docker Image on VM 70') {
-            steps {
-                sh """
-                    ssh ${DEPLOY_SERVER} "
-                        cd ${DEPLOY_DIR} &&
-                        docker build -t ${IMAGE_NAME}:${BUILD_NUMBER} .
-                    "
-                """
-            }
-        }
-
-        stage('Stop Old Container on VM 70') {
-            steps {
-                sh """
-                    ssh ${DEPLOY_SERVER} "
-                        if [ \$(docker ps -q -f name=${CONTAINER_NAME}) ]; then
-                            docker stop ${CONTAINER_NAME}
-                        fi
-                        if [ \$(docker ps -aq -f name=${CONTAINER_NAME}) ]; then
-                            docker rm ${CONTAINER_NAME}
-                        fi
-                    "
-                """
-            }
-        }
-
-        stage('Run New Container on VM 70') {
-            steps {
-                sh """
-                    ssh ${DEPLOY_SERVER} "
-                        docker run -d --name ${CONTAINER_NAME} \
-                        -p ${PORT}:${PORT} \
-                        ${IMAGE_NAME}:${BUILD_NUMBER}
-                    "
-                """
-            }
-        }
-    }
-
-    post {
-        success {
-            echo "Application deployed successfully!"
-            echo "Access it at: http://10.4.4.70:${PORT}"
         }
     }
 }
-
