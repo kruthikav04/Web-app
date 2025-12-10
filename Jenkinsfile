@@ -38,7 +38,7 @@ pipeline {
             steps {
                 sshagent([SSH_CRED]) {
                     sh """
-                        scp image.tar ${DEPLOY_USER}@${DEPLOY_HOST}:/tmp/image.tar
+                        scp -p 5001 image.tar ${DEPLOY_USER}@${DEPLOY_HOST}:/tmp/image.tar
                     """
                 }
             }
