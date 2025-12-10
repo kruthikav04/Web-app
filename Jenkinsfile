@@ -6,7 +6,7 @@ pipeline {
         DEPLOY_HOST = "10.4.4.70"
         DEPLOY_DIR = "/home/backup_gcp/run"
         GIT_URL = "https://github.com/kruthikav04/Web-app.git"  // replace with your repo
-        SSH_CRED = "vm-ssh"
+        SSH_CRED = "vm-ssh-1"
     }
 
     stages {
