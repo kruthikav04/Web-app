@@ -2,26 +2,45 @@ pipeline {
     agent any
 
     environment {
+        SSH_CRED = "vm-ssh-1"
         DEPLOY_USER = "backup_gcp"
         DEPLOY_HOST = "10.4.4.70"
-        DEPLOY_DIR = "/home/backup_gcp/run"
-        GIT_URL = "https://github.com/kruthikav04/Web-app.git"  // replace with your repo
-        SSH_CRED = "vm-ssh-1"
+        IMAGE_NAME = "python-webapp"
+        CONTAINER_NAME = "pythonweb"
+        PORT = "5001"
     }
 
     stages {
-        stage('Deploy Python App') {
+
+        stage('Build Docker Image') {
+            steps {
+                sh """
+                    docker build -t ${IMAGE_NAME}:latest .
+                """
+            }
+        }
+
+        stage('Deploy to VM 70') {
             steps {
                 sshagent([SSH_CRED]) {
                     sh """
                         ssh -o StrictHostKeyChecking=no ${DEPLOY_USER}@${DEPLOY_HOST} '
-                            mkdir -p ${DEPLOY_DIR} &&
-                            cd ${DEPLOY_DIR} &&
-                            rm -rf * &&
-                            git clone ${GIT_URL} app &&
-                            cd app &&
-                            pip3 install -r requirements.txt &&
-                            nohup python3 app.py > output.log 2>&1 &
+                            docker stop ${CONTAINER_NAME} || true &&
+                            docker rm ${CONTAINER_NAME} || true &&
+                            docker rmi ${IMAGE_NAME}:latest || true &&
+                            exit
+                        '
+                    """
+
+                    // Copy image to remote VM
+                    sh """
+                        docker save ${IMAGE_NAME}:latest | ssh ${DEPLOY_USER}@${DEPLOY_HOST} docker load
+                    """
+
+                    // Run container again
+                    sh """
+                        ssh -o StrictHostKeyChecking=no ${DEPLOY_USER}@${DEPLOY_HOST} '
+                            docker run -d --name ${CONTAINER_NAME} -p ${PORT}:${PORT} ${IMAGE_NAME}:latest
                         '
                     """
                 }
