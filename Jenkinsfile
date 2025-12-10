@@ -7,15 +7,16 @@ pipeline {
         DEPLOY_HOST = "10.4.4.70"
         IMAGE_NAME = "python-webapp"
         CONTAINER_NAME = "pythonweb-docker"
-        DOCKER_PORT = "5002"   // Docker container host port
+        DOCKER_PORT = "5002"   // Host port for Docker container
     }
 
     stages {
 
         stage('Checkout Code') {
             steps {
-                checkout([$class: 'GitSCM', 
-                    branches: [[name: 'dev']], 
+                // Jenkins will clone the dev branch from your GitHub repo
+                checkout([$class: 'GitSCM',
+                    branches: [[name: 'dev']],
                     userRemoteConfigs: [[
                         url: 'https://github.com/kruthikav04/Web-app.git',
                         credentialsId: SSH_CRED
@@ -26,12 +27,12 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                // Build Docker from the Jenkins workspace
+                // Build Docker image from the Jenkins workspace
                 sh "docker build -t ${IMAGE_NAME}:latest ."
             }
         }
 
-        stage('Deploy Docker Container to VM 70') {
+        stage('Deploy Docker Container') {
             steps {
                 sshagent([SSH_CRED]) {
                     // Stop & remove old Docker container & image on VM 70
@@ -43,10 +44,10 @@ pipeline {
                     '
                     """
 
-                    // Copy Docker image to VM 70
+                    // Copy Docker image to VM
                     sh "docker save ${IMAGE_NAME}:latest | ssh ${DEPLOY_USER}@${DEPLOY_HOST} docker load"
 
-                    // Run container on VM 70 port 5002
+                    // Run container on port 5002
                     sh """
                     ssh -o StrictHostKeyChecking=no ${DEPLOY_USER}@${DEPLOY_HOST} '
                         docker run -d --name ${CONTAINER_NAME} -p ${DOCKER_PORT}:5001 ${IMAGE_NAME}:latest
