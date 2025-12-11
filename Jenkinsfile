@@ -7,7 +7,7 @@ pipeline {
         DEPLOY_HOST = "10.4.4.70"
         IMAGE_NAME = "python-webapp"
         CONTAINER_NAME = "pythonweb-docker"
-        DOCKER_PORT = "5002"   // Host port for Docker container
+        DOCKER_PORT = "5001"   // Host port for Docker container
     }
 
     stages {
@@ -38,9 +38,7 @@ pipeline {
                     // Stop & remove old Docker container & image on VM 70
                     sh """
                     ssh -o StrictHostKeyChecking=no ${DEPLOY_USER}@${DEPLOY_HOST} '
-                        docker stop ${CONTAINER_NAME} || true &&
-                        docker rm ${CONTAINER_NAME} || true &&
-                        docker rmi ${IMAGE_NAME}:latest || true
+                        docker rm ${CONTAINER_NAME} || true                    
                     '
                     """
 
